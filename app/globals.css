@@ -145,28 +145,18 @@ body.hide-cursor{cursor:none}
    ========================================================= */
 .hero{min-height:100vh;padding:140px var(--pad) 48px;display:flex;flex-direction:column;
   justify-content:space-between;position:relative;overflow:hidden}
-.hero__bg{position:absolute;inset:0;z-index:-1;overflow:hidden}
-/* Minimal animated "shader": soft brand-purple blobs slowly drift + scale,
-   giving a living mesh-gradient feel while keeping the hero clean.
-   Transform/opacity only -> GPU-cheap. Auto-stops under reduced-motion. */
-.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;will-change:transform}
+.hero__bg{position:absolute;inset:0;z-index:-1;overflow:hidden;background:#fff}
+/* Procedural WebGL satin/iridescence background (ShaderBackground). It paints
+   opaque white over the fallback blobs; grid-lines sit on top of it. */
+.hero__shader{position:absolute;inset:0;z-index:1;pointer-events:none}
+.hero__shader canvas{display:block;width:100%;height:100%}
+/* Static gradient blobs — fallback shown only if WebGL is unavailable */
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;z-index:0}
 .blob--1{width:46vw;height:46vw;background:radial-gradient(circle,#cdb6f0,transparent 70%);
-  top:-10vw;right:-8vw;animation:heroDrift1 24s ease-in-out infinite}
+  top:-10vw;right:-8vw}
 .blob--2{width:34vw;height:34vw;background:radial-gradient(circle,#e7dcfa,transparent 70%);
-  bottom:-6vw;left:-6vw;animation:heroDrift2 30s ease-in-out infinite}
-/* Third blob in the brand purple — drawn on the bg layer, no markup change */
-.hero__bg::before{content:"";position:absolute;width:40vw;height:40vw;border-radius:50%;
-  background:radial-gradient(circle,rgba(151,114,204,.4),transparent 70%);
-  filter:blur(90px);top:28%;left:34%;opacity:.5;will-change:transform;
-  animation:heroDrift3 27s ease-in-out infinite}
-@keyframes heroDrift1{0%,100%{transform:translate(0,0) scale(1)}
-  50%{transform:translate(-6vw,5vw) scale(1.12)}}
-@keyframes heroDrift2{0%,100%{transform:translate(0,0) scale(1)}
-  50%{transform:translate(7vw,-4vw) scale(1.1)}}
-@keyframes heroDrift3{0%,100%{transform:translate(0,0) scale(1)}
-  33%{transform:translate(8vw,6vw) scale(1.15)}
-  66%{transform:translate(-7vw,-5vw) scale(.95)}}
-.grid-lines{position:absolute;inset:0;
+  bottom:-6vw;left:-6vw}
+.grid-lines{position:absolute;inset:0;z-index:2;
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:clamp(60px,8vw,120px) clamp(60px,8vw,120px);
   mask-image:radial-gradient(circle at 50% 40%,#000,transparent 80%);
@@ -288,21 +278,59 @@ body.hide-cursor{cursor:none}
 .service{position:relative;display:grid;grid-template-columns:80px 1fr 1.1fr auto;
   gap:30px;align-items:center;padding:clamp(28px,3.4vw,48px) var(--pad);
   border-bottom:1px solid var(--line);overflow:hidden;transition:color .4s var(--ease)}
-.service::before{content:"";position:absolute;inset:0;background:var(--ink);
-  transform:translateY(101%);transition:transform .55s var(--ease);z-index:-1}
 .service:hover{color:#fff}
-.service:hover::before{transform:translateY(0)}
 .service__no{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--purple)}
 .service__title{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;
   font-size:clamp(1.5rem,3vw,2.6rem);line-height:1}
 .service__desc{color:var(--ink-soft);font-size:clamp(.95rem,1.1vw,1.05rem);max-width:46ch;
   transition:color .4s}
-.service:hover .service__desc{color:rgba(255,255,255,.7)}
+.service:hover .service__desc{color:#fff}
 .service__tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .service__tags span{font-family:var(--font-display);font-weight:600;font-size:12px;
   padding:7px 13px;border:1px solid var(--line);border-radius:100px;white-space:nowrap;
   transition:border-color .4s,color .4s}
 .service:hover .service__tags span{border-color:rgba(255,255,255,.25);color:#fff}
+/* Clickable hint */
+.service{cursor:pointer}
+
+/* Hover-reveal background: the hovered service's image fills the section and
+   zooms in (JS-driven). Sits above the purple bg, below the text (z-index:1). */
+.services__media{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+/* Each layer is revealed with a circular mask growing from the centre (GSAP) */
+.services__media-layer{position:absolute;inset:0;background-size:cover;
+  background-position:center center;clip-path:circle(0% at 50% 50%);
+  -webkit-clip-path:circle(0% at 50% 50%);will-change:clip-path}
+/* Scrim sits ABOVE the image layers (z-index:5) and below the text; darker on
+   the edges where the copy sits so it stays readable. Only shown while hovering. */
+.services__media::after{content:"";position:absolute;inset:0;z-index:5;opacity:0;
+  background:linear-gradient(90deg,rgba(15,13,18,.74),rgba(15,13,18,.5) 50%,rgba(15,13,18,.74));
+  transition:opacity .5s var(--ease)}
+.services.is-hovering .services__media::after{opacity:1}
+
+/* Spotlight: while hovering the list, the active row is pure white and the
+   rest fade back, like a focused menu. */
+.service{transition:color .4s var(--ease),opacity .4s var(--ease)}
+/* !important overrides the inline opacity GSAP leaves on each row after its
+   intro reveal (initListItems) — without it the dim never takes effect. */
+.services__list:hover .service{opacity:.16!important}
+.services__list:hover .service:hover{opacity:1!important}
+
+/* Service image lightbox — opened/animated by initServicesPopup (GSAP) */
+.svc-popup{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;
+  justify-content:center;padding:5vh 5vw;visibility:hidden;pointer-events:none}
+.svc-popup.is-open{visibility:visible;pointer-events:auto}
+.svc-popup__backdrop{position:absolute;inset:0;background:rgba(21,19,26,.78);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;cursor:pointer}
+.svc-popup__panel{position:relative;max-width:min(1040px,92vw);max-height:90vh;
+  border-radius:18px;overflow:hidden;opacity:0;transform:scale(.9);
+  box-shadow:0 50px 130px -30px rgba(0,0,0,.75)}
+.svc-popup__panel img{display:block;width:100%;height:auto;max-height:90vh;object-fit:contain}
+.svc-popup__close{position:absolute;top:14px;right:14px;z-index:2;width:46px;height:46px;
+  border:none;border-radius:50%;background:rgba(255,255,255,.92);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .3s,transform .35s var(--ease)}
+.svc-popup__close svg{width:22px;height:22px}
+.svc-popup__close:hover{background:#fff;transform:rotate(90deg)}
 
 /* =========================================================
    WORK — sticky info (left) + scrolling images (right)
@@ -337,6 +365,20 @@ body.hide-cursor{cursor:none}
   display:flex;align-items:baseline;gap:6px}
 .work__count b{font-size:2rem;color:var(--ink);line-height:1}
 .work__count i{font-style:normal}
+/* Floating skip pill — fixed bottom-centre, shown from the 5th project while
+   the Work section is in view (toggled in initWorkSkip). */
+.work__skip{position:fixed;left:50%;bottom:clamp(20px,4vw,34px);z-index:200;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  white-space:nowrap;max-width:calc(100vw - 28px);padding:14px 26px;border-radius:100px;
+  background:var(--ink);color:#fff;font-family:var(--font-display);font-weight:600;font-size:14px;
+  box-shadow:0 18px 50px -16px rgba(21,19,26,.55);
+  opacity:0;transform:translate(-50%,18px);pointer-events:none;
+  transition:opacity .45s var(--ease),transform .45s var(--ease),background .3s}
+.work__skip span{white-space:nowrap}
+.work__skip svg{flex-shrink:0}
+.work__skip.is-shown{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.work__skip:hover{background:var(--purple)}
+.work__skip svg{width:18px;height:18px}
 
 /* Stacking column — each card sticks centred and the next stacks over it */
 .work__right{display:block;padding:14vh 0}
@@ -388,6 +430,15 @@ body.hide-cursor{cursor:none}
   font-size:clamp(2.2rem,4.4vw,3.8rem);letter-spacing:-.02em;line-height:1.02;color:#fff}
 .pcard__body p{color:rgba(239,234,246,.74);font-size:clamp(1.05rem,1.4vw,1.35rem);
   max-width:52ch;line-height:1.6}
+/* Cursor-follow purple spotlight (JS sets --mx/--my from the mouse position) */
+.pcard{--mx:50%;--my:50%}
+.pcard::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  z-index:0;opacity:0;transition:opacity .45s var(--ease);
+  background:radial-gradient(280px circle at var(--mx) var(--my),rgba(151,114,204,.45),transparent 62%)}
+.pcard:hover::after{opacity:1}
+.pcard:hover{border-color:rgba(151,114,204,.5)}
+/* Keep the card content above the glow */
+.pcard__title,.pcard__body{position:relative;z-index:1}
 
 /* Reduced-motion / no-JS fallback: a plain stacked list, no pinning */
 .process--static .process__scroll{height:auto}
@@ -536,9 +587,13 @@ body.hide-cursor{cursor:none}
   .hero{padding-top:120px}
   .hero__bottom{flex-direction:column;align-items:flex-start}
   .intro__stats{grid-template-columns:1fr;gap:34px}
-  /* Process cards take more width on tablets/phones so the copy stays readable */
-  .pcard{width:min(86%,560px)}
-  .pcard__body p{max-width:none}
+  /* Process: cards fill the width (no horizontal stagger here, see JS) and the
+     stage is sized so the longest card's copy fits without big empty space. */
+  .process__cards{height:clamp(360px,52vh,480px)}
+  .pcard{width:100%}
+  .pcard__body{gap:clamp(14px,3vw,22px);padding:clamp(22px,4vw,34px)}
+  .pcard__body h3{font-size:clamp(1.7rem,5.2vw,2.4rem)}
+  .pcard__body p{max-width:none;font-size:clamp(.98rem,2.3vw,1.12rem);line-height:1.5}
   .cursor,.cursor-follow{display:none}
   body.hide-cursor{cursor:auto}
 }
@@ -548,8 +603,11 @@ body.hide-cursor{cursor:none}
   .wk__cap h4{font-size:1.2rem}
   /* Stack the card head above the body on the smallest screens */
   .pcard{flex-direction:column}
-  .pcard__title{border-right:0;border-bottom:1px solid rgba(151,114,204,.22);padding:18px}
-  .process__cards{height:clamp(360px,60vh,480px)}
+  .pcard__title{border-right:0;border-bottom:1px solid rgba(151,114,204,.22);padding:16px}
+  .process__cards{height:clamp(340px,54vh,440px)}
+  .pcard__body{gap:12px;padding:20px}
+  .pcard__body h3{font-size:clamp(1.55rem,7vw,2.05rem)}
+  .pcard__body p{font-size:clamp(.95rem,3.6vw,1.05rem);line-height:1.45}
 }
 
 @media(prefers-reduced-motion:reduce){

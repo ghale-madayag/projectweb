@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, Fragment } from "react";
+import ShaderBackground from "../components/ShaderBackground";
 
 /* Reusable arrow icon used by several buttons */
 function ArrowIcon() {
@@ -56,14 +57,14 @@ const PROJECTS = [
   {
     img: "City-Mind-NP-Psychiatry",
     alt: "City Mind NP Psychiatry",
-    name: "City Mind",
+    name: "City Mind NP",
     cat: "Psychiatry & Behavioral Health",
     desc: "A calming, conversion-focused site for a psychiatric practice — evidence-based care, easy booking and HIPAA-compliant trust signals.",
   },
   {
     img: "LT-Fulfillment",
-    alt: "LT Fulfillment LLC",
-    name: "LT Fulfillment",
+    alt: "L&T Fulfillment LLC",
+    name: "L&T Fulfillment",
     cat: "Freight & Logistics",
     desc: "A bold dark-mode site for an expedited freight company — real-time dispatch, secure TWIC-authorized transport and live fleet performance.",
   },
@@ -260,8 +261,11 @@ export default function Home() {
         {/* ===== HERO ===== */}
         <section className="hero" id="hero">
           <div className="hero__bg" aria-hidden="true">
+            {/* Static blobs are the fallback if WebGL is unavailable; the
+                shader canvas paints opaque white over them when it runs. */}
             <span className="blob blob--1"></span>
             <span className="blob blob--2"></span>
+            <ShaderBackground className="hero__shader" />
             <span className="grid-lines"></span>
           </div>
 
@@ -373,6 +377,9 @@ export default function Home() {
         {/* ===== SERVICES ===== */}
         <section className="services" id="services">
           <span className="services__circle" aria-hidden="true"></span>
+          {/* Hover-reveal background — JS fills one layer per service (see
+              initServicesMedia); the hovered service's image zooms in here */}
+          <div className="services__media" id="servicesMedia" aria-hidden="true"></div>
           <div className="section-head">
             <span className="section-head__tag" data-reveal>
               (01) — What I Do
@@ -386,7 +393,12 @@ export default function Home() {
           </div>
 
           <div className="services__list">
-            <article className="service" data-service>
+            <article
+              className="service"
+              data-service
+              data-img="Web-Design"
+              data-cursor="view"
+            >
               <span className="service__no">01</span>
               <h3 className="service__title">Web Design &amp; UI/UX</h3>
               <p className="service__desc">
@@ -399,7 +411,12 @@ export default function Home() {
                 <span>Prototyping</span>
               </div>
             </article>
-            <article className="service" data-service>
+            <article
+              className="service"
+              data-service
+              data-img="Web-Development"
+              data-cursor="view"
+            >
               <span className="service__no">02</span>
               <h3 className="service__title">Web Development</h3>
               <p className="service__desc">
@@ -412,7 +429,12 @@ export default function Home() {
                 <span>Inertia</span>
               </div>
             </article>
-            <article className="service" data-service>
+            <article
+              className="service"
+              data-service
+              data-img="E-Commerce-Web-Apps"
+              data-cursor="view"
+            >
               <span className="service__no">03</span>
               <h3 className="service__title">E-Commerce &amp; Web Apps</h3>
               <p className="service__desc">
@@ -425,7 +447,12 @@ export default function Home() {
                 <span>Integrations</span>
               </div>
             </article>
-            <article className="service" data-service>
+            <article
+              className="service"
+              data-service
+              data-img="CMS-WordPress"
+              data-cursor="view"
+            >
               <span className="service__no">04</span>
               <h3 className="service__title">CMS &amp; WordPress</h3>
               <p className="service__desc">
@@ -455,7 +482,7 @@ export default function Home() {
                   Psychiatry &amp; Behavioral Health
                 </span>
                 <h3 className="work__name" id="wkName">
-                  City Mind
+                  City Mind NP
                 </h3>
                 <p className="work__desc" id="wkDesc">
                   A calming, conversion-focused site for a psychiatric practice —
@@ -691,6 +718,40 @@ export default function Home() {
           Project<span className="accent">Web</span>
         </div>
       </footer>
+
+      {/* Floating skip button — appears from the 5th project while the Work
+          section is in view (toggled in initWorkSkip); jumps to Process. */}
+      <a
+        href="#process"
+        className="work__skip"
+        id="workSkip"
+        data-cursor="hover"
+        aria-label="Seen enough? Skip ahead to the next section"
+      >
+        <span>Seen enough? Skip ahead</span>
+        <ArrowIcon />
+      </a>
+
+      {/* ===== SERVICE IMAGE POPUP ===== */}
+      {/* Reusable lightbox — a clicked service feeds its image in (see
+          initServicesPopup in animations.js) */}
+      <div className="svc-popup" id="svcPopup" aria-hidden="true" role="dialog" aria-modal="true">
+        <div className="svc-popup__backdrop" data-svc-close></div>
+        <div className="svc-popup__panel">
+          <button className="svc-popup__close" data-svc-close aria-label="Close image">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M6 6l12 12M18 6L6 18"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          {/* src/alt set imperatively on open */}
+          <img id="svcPopupImg" src="" alt="" />
+        </div>
+      </div>
     </>
   );
 }

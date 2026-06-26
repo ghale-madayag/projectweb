@@ -8,14 +8,14 @@ Guidance for Claude Code (and other AI assistants) working in this repository.
 web design & development studio. Bold, animation-heavy, brand purple `#9772cc` on white.
 
 This was originally a plain static site (`index.html` + `css` + `js`) and has been
-**converted to Next.js (App Router)**. The full design intent is documented in
-[project-spec.md](project-spec.md) — read it before making design/layout changes.
+**converted to Next.js (App Router)**.
 
 ## Tech stack
 
 - **Next.js 14** (App Router) + **React 18** — JavaScript (`.jsx`), not TypeScript.
 - **GSAP 3.12 + ScrollTrigger** — all scroll animation.
 - **Lenis** — smooth scrolling (exposed as `window.lenis`).
+- **OGL** — lightweight WebGL for the hero's procedural shader background.
 - Plain global CSS (no Tailwind/CSS-modules). Fonts via Google Fonts `<link>`.
 - No backend. The site is fully static/client-rendered; `next build` prerenders one page.
 
@@ -43,15 +43,19 @@ keep in Drive. If a build/install must be verified from the Drive path, copy the
 
 ```
 app/
-  layout.jsx     <html>/<body>, metadata, font <link>s, imports globals.css
+  layout.jsx     <html>/<body>, metadata + JSON-LD, font <link>s, imports globals.css
   page.jsx       "use client" — ALL page markup as JSX; runs initSite() in useEffect
   globals.css    full design system (verbatim from the original style.css)
+  sitemap.js     generates /sitemap.xml
+  robots.js      generates /robots.txt (points at the sitemap)
+  manifest.js    generates /manifest.webmanifest
+components/
+  ShaderBackground.jsx  reusable OGL/GLSL hero background ("use client")
 lib/
   animations.js  initSite() — GSAP/Lenis/cursor/nav/marquee logic (ported from main.js)
 public/
-  Images/*.webp  project screenshots (portrait, ~1068×1291)
+  Images/*.webp  project + service screenshots (portrait, ~1068×1291)
   Project Web Logo.png
-project-spec.md  design/brand/section spec — the source of truth for intent
 next.config.mjs  reactStrictMode:false (see below)
 ```
 
@@ -62,7 +66,12 @@ next.config.mjs  reactStrictMode:false (see below)
   renders the markup and calls `initSite()` once from a `useEffect`. Keep the element
   `id`s and class names in sync between `page.jsx` and `animations.js`; the JS depends on
   them (e.g. `#workRight`, `.wk`, `#wkCat`, `#preloader`, `.services__dot`,
-  `#processScroll`, `#processCards`, `.pcard`, `#techMarquee`).
+  `#processScroll`, `#processCards`, `.pcard`, `#techMarquee`, `#servicesMedia`,
+  `#svcPopup`, `#workSkip`, `[data-service]` + its `data-img`).
+- **One React component exception:** `components/ShaderBackground.jsx` is the only
+  piece NOT driven by `animations.js` — it owns its own WebGL (OGL) lifecycle in a
+  `useEffect` (renderer, RAF loop, resize, cursor uniform, teardown). It's rendered
+  inside `.hero__bg` and fails silently to the CSS blob fallback if WebGL is missing.
 - **Content lives in arrays at the top of `page.jsx`.** `PROJECTS` (Work deck — first
   card's info is also hard-coded in the `.work__display` left panel, and the `/ N` count
   in `#wkCur`'s sibling is hard-coded; update both when changing the count), `STEPS`
@@ -75,8 +84,7 @@ next.config.mjs  reactStrictMode:false (see below)
   warning is expected and acceptable.
 - **Effects are gated** for touch / reduced-motion via checks in `initSite()`. Preserve
   these guards; there's also a 4.5s preloader safety fallback.
-- **CSS is hand-authored and matches the spec exactly.** When changing visuals, prefer
-  editing `globals.css` and keep `project-spec.md` accurate.
+- **CSS is hand-authored.** When changing visuals, prefer editing `globals.css`.
 
 ## Key scroll-driven sections
 
@@ -98,6 +106,53 @@ driver (`animations.js`). Changing one usually means touching all three.
 - **Marquees** (`initMarquee`). `#marquee1`, `#marquee2`, `#techMarquee`, `#footerMarquee`
   each auto-scroll via a `xPercent 0↔-50%` loop; content is **duplicated in the markup** so
   the loop is seamless. ScrollTrigger flips `timeScale` with scroll direction.
+- **Services — hover-reveal + popup** (`.service[data-service][data-img]`). The purple
+  section reveals the hovered service's image as a full-section background via a
+  centre-out `clip-path` circle mask (`initServicesMedia` builds one preloaded
+  `.services__media-layer` per service; pointer devices only). A scrim
+  (`.services__media::after`, `z-index:5`) sits ABOVE the image layers — keep layer
+  `z-index` bounded (0/1/2) or the scrim won't darken them. The hovered row is spotlit
+  (`!important` opacity, see gotcha). Clicking a service opens the `#svcPopup` lightbox at
+  the image's natural aspect ratio (`initServicesPopup`, also the touch fallback). Images
+  map by `data-img` → `/Images/<data-img>.webp`.
+- **Hero — WebGL shader + cursor glow** (`components/ShaderBackground.jsx`). Procedural
+  satin/iridescence in brand purple (no textures); a `uMouse` uniform makes a soft purple
+  glow follow the cursor (smoothed). Lives behind `.grid-lines`, above the fallback
+  `.blob`s. DPR-capped, pauses offscreen/hidden, static frame under reduced-motion.
+- **Process cards — cursor spotlight** (`.pcard::after`, `initProcessCards`). A purple
+  radial gradient follows the mouse inside each card via `--mx`/`--my` CSS vars (pointer
+  only). Card content is kept above it with `z-index:1`.
+- **Work — floating skip button** (`#workSkip`, `initWorkSkip`). A fixed bottom-centre
+  pill that appears once past the 5th project AND while the Work section is in view (two
+  ScrollTriggers). Direction-aware: scrolling down → "Skip ahead" → `#process`; scrolling
+  up → "Skip back up" → `#services`. Its click does a long eased `lenis.scrollTo`. Must be
+  rendered at page root (NOT inside the transformed Work section) so `position:fixed` works.
+
+## SEO & Search Console
+
+- All metadata lives in `app/layout.jsx` (`metadata` export) plus inline **JSON-LD**
+  (`ProfessionalService`). `metadataBase` / `SITE_URL` is `https://projectweb.net` — the
+  real production domain; sitemap, robots, canonical and OG all derive from it.
+- **Google Search Console** uses the HTML-tag method: paste the verification code into the
+  `GOOGLE_SITE_VERIFICATION` constant in `app/layout.jsx` (feeds `metadata.verification.google`),
+  deploy, then Verify and submit `sitemap.xml`.
+- OG/Twitter image is currently the logo PNG — a dedicated 1200×630 image would be better.
+
+## Gotchas (learned the hard way)
+
+- **Never run `npm run build` while `npm run dev` is running.** The production build
+  overwrites the shared `.next/` dir, so the dev server then 404s every JS/CSS chunk and
+  the page goes blank. To recover: stop dev, `rm -rf .next`, restart dev. To verify a
+  build safely, do it when dev is stopped (or in a separate copy).
+- **GSAP `gsap.from()` leaves an inline `opacity` on the element** after its reveal
+  (e.g. `initListItems` on `[data-service]`). Inline styles beat stylesheet rules, so any
+  CSS that later sets `opacity` on those elements (e.g. the services hover-dim) needs
+  `!important` to take effect.
+- **Drive Lenis from ONE rAF source.** With GSAP present, advance it from
+  `gsap.ticker` and sync `ScrollTrigger.update` on its `scroll` event — do NOT also run a
+  separate `requestAnimationFrame` loop calling `lenis.raf` (double-stepping = jitter).
+- **`position:fixed` breaks inside transformed ancestors.** Any fixed overlay (e.g.
+  `#workSkip`) must be rendered at the page root, not within a section that GSAP transforms.
 
 ## Deploying
 
@@ -108,7 +163,7 @@ driver (`animations.js`). Changing one usually means touching all three.
   `npm run build` produces `out/`) and dropped on any static host, since there's no server
   code.
 
-## Open items (from project-spec.md §5)
+## Open items
 
 - Project "View project" links are `#` placeholders — wire to real case-study URLs.
 - LinkedIn & Facebook URLs are `#` placeholders.

@@ -5,8 +5,7 @@ studio — built with **Next.js**, **GSAP/ScrollTrigger**, and **Lenis** smooth 
 
 > "I don't just develop; I design with an artist's eye and a coder's precision."
 
-Brand purple `#9772cc` on white. See [project-spec.md](project-spec.md) for the full
-design specification.
+Brand purple `#9772cc` on white.
 
 ## Tech stack
 
