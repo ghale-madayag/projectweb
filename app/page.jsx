@@ -22,6 +22,8 @@ function ArrowIcon() {
 const TECH = [
   "Laravel",
   "Vue.js",
+  "React",
+  "Next.js",
   "Inertia.js",
   "WordPress",
   "Elementor",
