@@ -12,7 +12,7 @@ This was originally a plain static site (`index.html` + `css` + `js`) and has be
 
 ## Tech stack
 
-- **Next.js 14** (App Router) + **React 18** — JavaScript (`.jsx`), not TypeScript.
+- **Next.js 16** (App Router, Turbopack) + **React 19** — JavaScript (`.jsx`), not TypeScript.
 - **GSAP 3.12 + ScrollTrigger** — all scroll animation.
 - **Lenis** — smooth scrolling (exposed as `window.lenis`).
 - **OGL** — lightweight WebGL for the hero's procedural shader background.

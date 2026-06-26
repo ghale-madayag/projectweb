@@ -750,8 +750,9 @@ export default function Home() {
               />
             </svg>
           </button>
-          {/* src/alt set imperatively on open */}
-          <img id="svcPopupImg" src="" alt="" />
+          {/* src/alt set imperatively on open (no initial src -> avoids the
+              empty-string src warning) */}
+          <img id="svcPopupImg" alt="" />
         </div>
       </div>
     </>
