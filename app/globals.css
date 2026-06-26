@@ -146,11 +146,26 @@ body.hide-cursor{cursor:none}
 .hero{min-height:100vh;padding:140px var(--pad) 48px;display:flex;flex-direction:column;
   justify-content:space-between;position:relative;overflow:hidden}
 .hero__bg{position:absolute;inset:0;z-index:-1;overflow:hidden}
-.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55}
+/* Minimal animated "shader": soft brand-purple blobs slowly drift + scale,
+   giving a living mesh-gradient feel while keeping the hero clean.
+   Transform/opacity only -> GPU-cheap. Auto-stops under reduced-motion. */
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;will-change:transform}
 .blob--1{width:46vw;height:46vw;background:radial-gradient(circle,#cdb6f0,transparent 70%);
-  top:-10vw;right:-8vw}
+  top:-10vw;right:-8vw;animation:heroDrift1 24s ease-in-out infinite}
 .blob--2{width:34vw;height:34vw;background:radial-gradient(circle,#e7dcfa,transparent 70%);
-  bottom:-6vw;left:-6vw}
+  bottom:-6vw;left:-6vw;animation:heroDrift2 30s ease-in-out infinite}
+/* Third blob in the brand purple — drawn on the bg layer, no markup change */
+.hero__bg::before{content:"";position:absolute;width:40vw;height:40vw;border-radius:50%;
+  background:radial-gradient(circle,rgba(151,114,204,.4),transparent 70%);
+  filter:blur(90px);top:28%;left:34%;opacity:.5;will-change:transform;
+  animation:heroDrift3 27s ease-in-out infinite}
+@keyframes heroDrift1{0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(-6vw,5vw) scale(1.12)}}
+@keyframes heroDrift2{0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(7vw,-4vw) scale(1.1)}}
+@keyframes heroDrift3{0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(8vw,6vw) scale(1.15)}
+  66%{transform:translate(-7vw,-5vw) scale(.95)}}
 .grid-lines{position:absolute;inset:0;
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:clamp(60px,8vw,120px) clamp(60px,8vw,120px);
@@ -202,12 +217,24 @@ body.hide-cursor{cursor:none}
 .intro__statement{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;
   text-transform:uppercase;font-size:clamp(1.55rem,4.6vw,4.1rem);line-height:1.14}
 .intro__statement .word{display:inline-block;opacity:.14;transition:opacity .4s}
-/* Inline image chips combined into the statement text */
+/* Inline image chips combined into the statement text. */
 .intro__statement .ph{overflow:hidden;vertical-align:middle;border-radius:.16em;
-  height:.92em;width:1.32em;margin:0 .12em;transform:translateY(-.05em);
+  height:.92em;width:1.32em;margin:0 .12em;position:relative;z-index:2;cursor:pointer;
+  transform:translateY(-.05em);
   box-shadow:0 10px 26px -12px rgba(21,19,26,.55)}
 .intro__statement .ph--round{border-radius:50%;width:.96em;height:.96em}
 .intro__statement .ph img{width:100%;height:100%;object-fit:cover;display:block}
+/* On hover, show the FULL image at its natural aspect ratio, large, popped
+   out over the text (taken out of flow so nothing reflows). Height drives
+   the size and width:auto keeps the true aspect ratio. */
+.intro__statement .ph:hover{overflow:visible;z-index:60}
+.intro__statement .ph:hover img{position:absolute;left:50%;top:50%;
+  width:auto;height:min(74vh,640px);max-width:88vw;object-fit:contain;
+  transform:translate(-50%,-50%);border-radius:12px;
+  box-shadow:0 50px 120px -30px rgba(21,19,26,.7);
+  animation:phPop .4s var(--ease)}
+@keyframes phPop{from{opacity:0;transform:translate(-50%,-50%) scale(.85)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 /* Oversized purple period that seeds the Services circle reveal */
 .intro__dot{width:.58em;height:.58em;border-radius:50%;background:var(--purple);
   margin-left:.08em;vertical-align:baseline}
@@ -328,34 +355,70 @@ body.hide-cursor{cursor:none}
 /* =========================================================
    PROCESS
    ========================================================= */
-.process{padding:clamp(60px,8vw,120px) 0;max-width:var(--maxw);margin:0 auto}
-.process__list{border-top:1px solid var(--line)}
-.step{display:grid;grid-template-columns:120px 1fr;gap:30px;align-items:start;
-  padding:clamp(30px,4vw,56px) var(--pad);border-bottom:1px solid var(--line)}
-.step__no{font-family:var(--font-display);font-weight:900;font-size:clamp(2rem,4vw,3.6rem);
-  color:var(--tint);line-height:1;-webkit-text-stroke:1.5px var(--purple);color:transparent}
-.step__body h3{font-family:var(--font-display);font-weight:800;font-size:clamp(1.6rem,3.4vw,2.8rem);
-  letter-spacing:-.02em;margin-bottom:12px}
-.step__body p{color:var(--ink-soft);max-width:60ch;font-size:clamp(1rem,1.2vw,1.15rem)}
+/* Dark indigo strip. The track is tall; a sticky inner pins while the cards
+   slide in horizontally and pile up (driven by initProcessTimeline). */
+/* Matches the CTA theme: near-black ink base. The purple glow lives on the
+   pinned panel so it stays centred in view the whole time the section holds. */
+.process{background:var(--ink);color:#efeaf6}
+.process__scroll{position:relative;height:340vh}
+.process__sticky{position:sticky;top:0;height:100vh;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(28px,4vw,52px);padding:0 var(--pad);
+  background:radial-gradient(55% 55% at 50% -2%,rgba(151,114,204,.32),transparent 70%)}
+.process .section-head{max-width:var(--maxw);margin:0 auto;width:100%}
+.process .section-head__tag{color:var(--purple)}
+.process .section-head__title{color:#fff}
+.process .section-head__title .accent{color:var(--purple)}
+
+/* Stage: cards are absolutely placed; JS animates their x on scroll */
+.process__cards{position:relative;width:100%;max-width:var(--maxw);margin:0 auto;
+  height:clamp(300px,42vh,460px)}
+.pcard{position:absolute;top:0;left:0;width:min(70%,720px);height:100%;
+  display:flex;border:1px solid rgba(151,114,204,.22);border-radius:20px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(21,19,26,.78) 40%,rgba(94,59,148,.5) 125%);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:0 30px 70px -30px rgba(0,0,0,.7);will-change:transform}
+.pcard__title{padding:clamp(20px,2.4vw,28px);border-right:1px solid rgba(151,114,204,.22);flex-shrink:0}
+.pcard__no{display:flex;align-items:center;justify-content:center;width:42px;height:42px;
+  border-radius:999px;background:var(--purple);color:#fff;
+  font-family:var(--font-display);font-weight:800;font-size:.95rem}
+.pcard__body{display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(20px,3vw,38px);padding:clamp(28px,3.4vw,52px)}
+.pcard__body h3{font-family:var(--font-display);font-weight:800;
+  font-size:clamp(2.2rem,4.4vw,3.8rem);letter-spacing:-.02em;line-height:1.02;color:#fff}
+.pcard__body p{color:rgba(239,234,246,.74);font-size:clamp(1.05rem,1.4vw,1.35rem);
+  max-width:52ch;line-height:1.6}
+
+/* Reduced-motion / no-JS fallback: a plain stacked list, no pinning */
+.process--static .process__scroll{height:auto}
+.process--static .process__sticky{position:static;height:auto;overflow:visible;
+  padding-top:clamp(60px,8vw,110px);padding-bottom:clamp(60px,8vw,110px)}
+.process--static .process__cards{height:auto;display:flex;flex-direction:column;gap:20px}
+.process--static .pcard{position:static;width:100%;height:auto;transform:none!important}
 
 /* =========================================================
    TECH STRIP
    ========================================================= */
-.tech{padding:clamp(60px,8vw,110px) var(--pad);text-align:center;background:var(--tint)}
+.tech{padding:clamp(60px,8vw,110px) 0;text-align:center;background:var(--tint)}
 .tech__label{font-family:var(--font-display);font-weight:600;text-transform:uppercase;
-  letter-spacing:.12em;font-size:13px;color:var(--purple);display:block;margin-bottom:34px}
-.tech__row{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(24px,5vw,80px)}
-.tech__row span{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;
-  font-size:clamp(1.6rem,4.5vw,3.4rem);color:var(--ink);transition:color .3s}
-.tech__row span:hover{color:var(--purple)}
+  letter-spacing:.12em;font-size:13px;color:var(--purple);display:block;
+  margin-bottom:clamp(28px,4vw,46px);padding:0 var(--pad)}
+/* Animated marquee of the stack — auto-scrolls (see initMarquee). Edges fade out. */
+.tech__marquee{overflow:hidden;width:100%;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
+.tech__track{gap:clamp(30px,5vw,64px)}
+.tech__track span{text-transform:none;color:var(--ink);transition:color .3s}
+.tech__track span:hover{color:var(--purple)}
+.tech__track i{font-size:clamp(.9rem,1.6vw,1.4rem)}
 
 /* =========================================================
    CTA
    ========================================================= */
-.cta{background:var(--ink);color:#fff;padding:clamp(90px,14vw,200px) var(--pad);
+.cta{background:var(--tint);color:var(--ink);padding:clamp(90px,14vw,200px) var(--pad);
   position:relative;overflow:hidden}
 .cta::before{content:"";position:absolute;width:60vw;height:60vw;border-radius:50%;
-  background:radial-gradient(circle,rgba(151,114,204,.35),transparent 70%);
+  background:radial-gradient(circle,rgba(151,114,204,.28),transparent 70%);
   top:-20vw;left:50%;transform:translateX(-50%);filter:blur(40px)}
 .cta__inner{max-width:var(--maxw);margin:0 auto;position:relative;text-align:center;
   display:flex;flex-direction:column;align-items:center}
@@ -366,16 +429,16 @@ body.hide-cursor{cursor:none}
 .cta__title .line{display:block;overflow:hidden}
 .cta__title .line span{display:inline-block}
 .cta__mail{display:inline-flex;align-items:center;gap:14px;margin-top:clamp(40px,6vw,70px);
-  background:#fff;color:var(--ink);padding:20px 34px;border-radius:100px;
+  background:var(--ink);color:#fff;padding:20px 34px;border-radius:100px;
   font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,2vw,1.4rem);
   transition:background .35s,color .35s,gap .35s}
 .cta__mail svg{width:22px;height:22px;transition:transform .35s var(--ease)}
 .cta__mail:hover{background:var(--purple);color:#fff}
 .cta__mail:hover svg{transform:translateX(5px)}
 .cta__channels{display:flex;flex-wrap:wrap;gap:14px 28px;justify-content:center;margin-top:48px}
-.cta__channels a{font-family:var(--font-display);font-weight:600;color:rgba(255,255,255,.65);
+.cta__channels a{font-family:var(--font-display);font-weight:600;color:var(--ink-soft);
   font-size:15px;position:relative;transition:color .3s}
-.cta__channels a:hover{color:#fff}
+.cta__channels a:hover{color:var(--ink)}
 .cta__channels a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:1px;
   background:var(--purple);transition:width .35s var(--ease)}
 .cta__channels a:hover::after{width:100%}
@@ -447,17 +510,21 @@ body.hide-cursor{cursor:none}
   .service__desc{grid-column:2;max-width:none}
   .service__tags{grid-column:2;justify-content:flex-start;margin-top:6px}
 }
-@media(max-width:980px){
-  /* Work: stack — static heading + captioned cards */
+@media(max-width:1200px){
+  /* Work: single-column STACKING DECK — cards pile up as you scroll
+     (phones + tablets). Heading scrolls away first, then images pile. */
   .work__layout{grid-template-columns:1fr;gap:24px}
   .work__left{position:static;height:auto;display:block}
   .work__left .work__h2{margin-top:10px}
   .work__display{display:none}
-  .work__right{padding:0}
-  .wk{position:static;width:auto;margin:0 0 30px;box-shadow:none;transform:none}
-  .wk__media{height:auto;width:100%;aspect-ratio:1068/1291}
-  .wk__media img{filter:none;transform:none}
-  .wk__cap{display:flex;flex-direction:column;gap:3px;padding:16px 4px 2px}
+  .work__right{padding:4vh 0 0}
+  .wk{position:sticky;top:9vh;width:100%;margin:0 auto clamp(40px,14vh,150px)}
+  .wk:last-child{margin-bottom:8vh}
+  /* Image sits flush at the top; the card's overflow:hidden + radius round it.
+     Caption fills the bottom of the card on the tint background. */
+  .wk__media{height:auto;width:100%;aspect-ratio:1068/1291;border-radius:0}
+  .wk__media img{filter:none}
+  .wk__cap{display:flex;flex-direction:column;gap:4px;padding:18px 20px 20px}
   .wk__cap h4{font-family:var(--font-display);font-weight:800;font-size:1.35rem;letter-spacing:-.02em}
   .wk__cap span{color:var(--purple);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.07em}
 }
@@ -469,13 +536,20 @@ body.hide-cursor{cursor:none}
   .hero{padding-top:120px}
   .hero__bottom{flex-direction:column;align-items:flex-start}
   .intro__stats{grid-template-columns:1fr;gap:34px}
-  .step{grid-template-columns:1fr;gap:10px}
-  .step__no{font-size:2rem}
+  /* Process cards take more width on tablets/phones so the copy stays readable */
+  .pcard{width:min(86%,560px)}
+  .pcard__body p{max-width:none}
   .cursor,.cursor-follow{display:none}
   body.hide-cursor{cursor:auto}
 }
 @media(max-width:560px){
-  .wk__media{border-radius:16px}
+  .wk{border-radius:16px}
+  .wk__cap{padding:16px 16px 18px}
+  .wk__cap h4{font-size:1.2rem}
+  /* Stack the card head above the body on the smallest screens */
+  .pcard{flex-direction:column}
+  .pcard__title{border-right:0;border-bottom:1px solid rgba(151,114,204,.22);padding:18px}
+  .process__cards{height:clamp(360px,60vh,480px)}
 }
 
 @media(prefers-reduced-motion:reduce){

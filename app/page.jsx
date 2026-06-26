@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Fragment } from "react";
 
 /* Reusable arrow icon used by several buttons */
 function ArrowIcon() {
@@ -17,8 +17,56 @@ function ArrowIcon() {
   );
 }
 
+/* Tech stack — drives the animated marquee in the "Built with a modern stack" strip */
+const TECH = [
+  "Laravel",
+  "Vue.js",
+  "Inertia.js",
+  "WordPress",
+  "Elementor",
+  "Breakdance",
+  "Figma",
+  "Claude Code",
+  "Zapier Automation",
+];
+
+/* Process phases — drives the horizontal scroll-stacked card timeline.
+   Content is unchanged from the original four-step process. */
+const STEPS = [
+  {
+    title: "Discover",
+    text: "We dig deep into your goals, your audience, and your brand — asking the right questions long before any pixels or code. No guesswork and no assumptions, just a clear, shared direction and a plan everyone feels confident in from day one.",
+  },
+  {
+    title: "Design",
+    text: "We craft high-fidelity designs in Figma so you can see exactly how every screen looks and feels before a single line of code is written. We refine the layout, type, colour and motion together until it's polished, on-brand and unmistakably yours.",
+  },
+  {
+    title: "Develop",
+    text: "Your designs become a fast, hand-coded, fully responsive site built with the right stack for the job — never a bloated template. Clean, scalable code with smooth animation and performance that holds up on every device, browser and connection.",
+  },
+  {
+    title: "Deploy",
+    text: "We launch, test across browsers and devices, and fine-tune every detail until it's flawless. Then we stick around with ongoing support, monitoring and improvements so your site keeps performing and growing long after go-live.",
+  },
+];
+
 /* Project list — drives the sticky stacking deck on the right of "Work" */
 const PROJECTS = [
+  {
+    img: "City-Mind-NP-Psychiatry",
+    alt: "City Mind NP Psychiatry",
+    name: "City Mind",
+    cat: "Psychiatry & Behavioral Health",
+    desc: "A calming, conversion-focused site for a psychiatric practice — evidence-based care, easy booking and HIPAA-compliant trust signals.",
+  },
+  {
+    img: "LT-Fulfillment",
+    alt: "LT Fulfillment LLC",
+    name: "LT Fulfillment",
+    cat: "Freight & Logistics",
+    desc: "A bold dark-mode site for an expedited freight company — real-time dispatch, secure TWIC-authorized transport and live fleet performance.",
+  },
   {
     img: "Allfliptix",
     alt: "Allfliptix",
@@ -404,14 +452,14 @@ export default function Home() {
               </h2>
               <div className="work__display">
                 <span className="work__cat" id="wkCat">
-                  Event Ticketing Platform
+                  Psychiatry &amp; Behavioral Health
                 </span>
                 <h3 className="work__name" id="wkName">
-                  Allfliptix
+                  City Mind
                 </h3>
                 <p className="work__desc" id="wkDesc">
-                  A full event ticketing &amp; inventory platform built on Laravel,
-                  Vue and Inertia — fast checkout and real-time seat management.
+                  A calming, conversion-focused site for a psychiatric practice —
+                  evidence-based care, easy booking and HIPAA-compliant trust signals.
                 </p>
                 <div className="work__foot">
                   <a
@@ -425,7 +473,7 @@ export default function Home() {
                   </a>
                   <span className="work__count">
                     <b id="wkCur">01</b>
-                    <i>/ 14</i>
+                    <i>/ 16</i>
                   </span>
                 </div>
               </div>
@@ -468,55 +516,35 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ===== PROCESS ===== */}
+        {/* ===== PROCESS — horizontal scroll-stacked card timeline ===== */}
         <section className="process" id="process">
-          <div className="section-head">
-            <span className="section-head__tag" data-reveal>
-              (03) — How I Work
-            </span>
-            <h2 className="section-head__title" data-reveal>
-              A process that<span className="accent"> ships.</span>
-            </h2>
-          </div>
-          <div className="process__list">
-            <div className="step" data-step>
-              <span className="step__no">01</span>
-              <div className="step__body">
-                <h3>Discover</h3>
-                <p>
-                  We dig into your goals, audience, and brand. No assumptions — just
-                  a clear, shared direction.
-                </p>
+          {/* Tall track: its scroll length is what the cards animate across */}
+          <div className="process__scroll" id="processScroll">
+            <div className="process__sticky">
+              <div className="section-head">
+                <span className="section-head__tag" data-reveal>
+                  (03) — How I Work
+                </span>
+                <h2 className="section-head__title" data-reveal>
+                  A process that<span className="accent"> ships.</span>
+                </h2>
               </div>
-            </div>
-            <div className="step" data-step>
-              <span className="step__no">02</span>
-              <div className="step__body">
-                <h3>Design</h3>
-                <p>
-                  High-fidelity designs in Figma. You see exactly how it looks and
-                  feels before a line of code.
-                </p>
-              </div>
-            </div>
-            <div className="step" data-step>
-              <span className="step__no">03</span>
-              <div className="step__body">
-                <h3>Develop</h3>
-                <p>
-                  Hand-coded, responsive, and fast. Built with the right stack for
-                  the job — not a bloated template.
-                </p>
-              </div>
-            </div>
-            <div className="step" data-step>
-              <span className="step__no">04</span>
-              <div className="step__body">
-                <h3>Deploy</h3>
-                <p>
-                  Launch, test, and refine. Plus ongoing support so your site keeps
-                  performing long after go-live.
-                </p>
+              {/* Cards are stacked absolutely; each slides in from the right
+                  as you scroll (driven by initProcessTimeline in animations.js) */}
+              <div className="process__cards" id="processCards">
+                {STEPS.map((s, i) => (
+                  <article className="pcard" key={i}>
+                    <div className="pcard__title">
+                      <span className="pcard__no">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <div className="pcard__body">
+                      <h3>{s.title}</h3>
+                      <p>{s.text}</p>
+                    </div>
+                  </article>
+                ))}
               </div>
             </div>
           </div>
@@ -527,16 +555,16 @@ export default function Home() {
           <span className="tech__label" data-reveal>
             Built with a modern stack
           </span>
-          <div className="tech__row">
-            <span data-reveal>Laravel</span>
-            <span data-reveal>Vue.js</span>
-            <span data-reveal>Inertia.js</span>
-            <span data-reveal>WordPress</span>
-            <span data-reveal>Elementor</span>
-            <span data-reveal>Breakdance</span>
-            <span data-reveal>Figma</span>
-            <span data-reveal>Claude Code</span>
-            <span data-reveal>Zapier Automation</span>
+          <div className="tech__marquee" aria-hidden="true">
+            {/* Content duplicated so the xPercent 0→-50% loop is seamless */}
+            <div className="marquee__track tech__track" id="techMarquee">
+              {[...TECH, ...TECH].map((t, i) => (
+                <Fragment key={i}>
+                  <span>{t}</span>
+                  <i>✦</i>
+                </Fragment>
+              ))}
+            </div>
           </div>
         </section>
 
